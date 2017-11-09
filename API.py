@@ -3,47 +3,48 @@ import DBController
 import RawTestData.DBBuilder as DBBuilder
 import stopgap
 import uuid
+import timeit
+import datetime
 
 app = bottle.Bottle()
 def Wildify(string):
     if not string:
         return("%")
     else:
-        return string + "%"
+        return(string + "%")
 
 @app.route('/')
 def hello():
-    GUID = str(uuid.uuid4())
-    bottle.response.set_cookie("access", GUID, max_age = 28800) #Domain
-    print(GUID)
+    GUID = uuid.uuid4()
+    DBController.AddCookie(GUID, "NSW")
+    bottle.response.set_cookie("access", str(GUID), max_age = 28800) #Domain
     return(stopgap.a)
-    
 
 @app.post("/Lawyer")
 def Lawyer():
-    string = """<table style="width:25%">
-  <tr>
-    <th>Firstname</th>
-    <th>Lastname</th>
-    <th>PostCode</th>
-    <th>Specialty</th>
-  </tr>"""
-    FirstName = Wildify(bottle.request.forms.get("FirstName"))
-    LastName = Wildify(bottle.request.forms.get("LastName"))
-    PostCode = Wildify(bottle.request.forms.get("PostCode"))
-    print(bottle.request.forms.get("PostCode"))
-    Accreditation = Wild_ify(bottle.request.forms.get("Accreditation"))
-    for entry in DBController.QueryLawyer(FirstName, LastName, PostCode, Accreditation):
-        string += "<tr>"
-        for field in entry:
-            string += "<td>" + str(field) + "</td>"
-        string += "</tr>"
-    string += "</table>"
-    return(string)
+    if bottle.request.get_cookie("access"):
+        State = DBController.CheckCookie(uuid.UUID(hex = bottle.request.get_cookie("access")))
+        if State:
+            bottle.response.headers["Content-Type"] = "application/json"
+            FirstName = Wildify(bottle.request.forms.get("FirstName"))
+            LastName = Wildify(bottle.request.forms.get("LastName"))
+            PostCode = Wildify(bottle.request.forms.get("PostCode"))
+            Specialty = Wildify(bottle.request.forms.get("Specialty"))
+            Language = bottle.request.forms.get("Language")
+            return(DBController.QueryLawyer(FirstName, LastName, PostCode, Language, State))
+    return({"error": "Sorry you are not authorised to access this data. Please try a page refresh"})
 
-@app.post("/Practise")
-def Practise():
-    pass   
+@app.post("/Firm")
+def Firm():
+    if bottle.request.get_cookie("access"):
+        State = DBController.CheckCookie(uuid.UUID(hex = bottle.request.get_cookie("access")))
+        if State:
+            bottle.response.headers["Content-Type"] = "application/json"
+            Name = Wildify(bottle.request.forms.get("Name"))
+            PostCode = Wildify(bottle.request.forms.get("PostCode"))
+            Language = bottle.request.forms.get("Language")
+            return(DBController.QueryFirm(Name, PostCode, Language, State))
+    return({"error": "Sorry you are not authorised to access this data. Please try a page refresh"})   
 
 @app.route('/Build/Test')
 def BuildTest():
@@ -53,11 +54,20 @@ def BuildTest():
 def BuildPerformance():
     DBBuilder.Build(1)
 
+@app.route('/Performance/Test')
+def Test():
+    stime = datetime.datetime.now()
+    res = DBController.QueryFirm('g%', '%', "hindi", 'NSW')
+    ftime = datetime.datetime.now()
+    print(ftime - stime)
+    return(res)
+
 @app.route('/AddCookie')
 def AddCookie():
     cookie = bottle.request.query["cookie"]
+    state = bottle.request.query["state"]
     print(cookie)
-    DBController.AddCookie()
+    DBController.AddCookie(cookie, state)
 
 bottle.run(app, host='localhost', port=8080)
 
