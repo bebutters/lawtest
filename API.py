@@ -32,7 +32,7 @@ def hello():
         GUID = uuid.uuid4()
         DBController.AddCookie(GUID, "NSW")
         bottle.response.set_cookie("access", str(GUID), max_age = 28800) #Domain
-        return(stopgap.a)
+        return(bottle.static_file("stopgap.html"))
     except Exception as e:
         return(e)
 
