@@ -15,10 +15,13 @@ def Wildify(string):
 
 @app.route('/')
 def hello():
-    GUID = uuid.uuid4()
-    DBController.AddCookie(GUID, "NSW")
-    bottle.response.set_cookie("access", str(GUID), max_age = 28800) #Domain
-    return(stopgap.a)
+    try:
+        GUID = uuid.uuid4()
+        DBController.AddCookie(GUID, "NSW")
+        bottle.response.set_cookie("access", str(GUID), max_age = 28800) #Domain
+        return(stopgap.a)
+    except Exception as e:
+        return(e)
 
 @app.post("/Lawyer")
 def Lawyer():
