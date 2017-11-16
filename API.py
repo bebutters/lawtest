@@ -86,7 +86,6 @@ def AddCookie():
     DBController.AddCookie(cookie, state)
 
     
-b
 if __name__ == '__main__':
     PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
     STATIC_ROOT = os.path.join(PROJECT_ROOT, 'static').replace('\\', '/')
