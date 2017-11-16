@@ -5,15 +5,28 @@ import stopgap
 import uuid
 import timeit
 import datetime
+import os
+import sys
+import routes
 
-app = bottle.Bottle()
+if '--debug' in sys.argv[1:] or 'SERVER_DEBUG' in os.environ:
+    # Debug mode will enable more verbose output in the console window.
+    # It must be set at the beginning of the script.
+    bottle.debug(True)
+    
+   
+def wsgi_app():
+    """Returns the application to make available through wfastcgi. This is used
+    when the site is published to Microsoft Azure."""
+    return bottle.default_app()
+
 def Wildify(string):
     if not string:
         return("%")
     else:
         return(string + "%")
 
-@app.route('/')
+@bottle.route('/')
 def hello():
     try:
         GUID = uuid.uuid4()
@@ -23,7 +36,7 @@ def hello():
     except Exception as e:
         return(e)
 
-@app.post("/Lawyer")
+@bottle.post("/Lawyer")
 def Lawyer():
     if bottle.request.get_cookie("access"):
         State = DBController.CheckCookie(uuid.UUID(hex = bottle.request.get_cookie("access")))
@@ -37,7 +50,7 @@ def Lawyer():
             return(DBController.QueryLawyer(FirstName, LastName, PostCode, Language, State))
     return({"error": "Sorry you are not authorised to access this data. Please try a page refresh"})
 
-@app.post("/Firm")
+@bottle.post("/Firm")
 def Firm():
     if bottle.request.get_cookie("access"):
         State = DBController.CheckCookie(uuid.UUID(hex = bottle.request.get_cookie("access")))
@@ -49,15 +62,15 @@ def Firm():
             return(DBController.QueryFirm(Name, PostCode, Language, State))
     return({"error": "Sorry you are not authorised to access this data. Please try a page refresh"})   
 
-@app.route('/Build/Test')
+@bottle.route('/Build/Test')
 def BuildTest():
     DBController.Build(0)
 
-@app.route('/Build/Performance')
+@bottle.route('/Build/Performance')
 def BuildPerformance():
     DBBuilder.Build(1)
 
-@app.route('/Performance/Test')
+@bottle.route('/Performance/Test')
 def Test():
     stime = datetime.datetime.now()
     res = DBController.QueryFirm('g%', '%', "hindi", 'NSW')
@@ -65,12 +78,31 @@ def Test():
     print(ftime - stime)
     return(res)
 
-@app.route('/AddCookie')
+@bottle.route('/AddCookie')
 def AddCookie():
     cookie = bottle.request.query["cookie"]
     state = bottle.request.query["state"]
     print(cookie)
     DBController.AddCookie(cookie, state)
 
-bottle.run(app)
+    
+b
+if __name__ == '__main__':
+    PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
+    STATIC_ROOT = os.path.join(PROJECT_ROOT, 'static').replace('\\', '/')
+    HOST = os.environ.get('SERVER_HOST', 'localhost')
+    try:
+        PORT = int(os.environ.get('SERVER_PORT', '5555'))
+    except ValueError:
+        PORT = 5555
+
+    @bottle.route('/static/<filepath:path>')
+    def server_static(filepath):
+        """Handler for static files, used with the development server.
+        When running under a production server such as IIS or Apache,
+        the server should be configured to serve the static files."""
+        return bottle.static_file(filepath, root=STATIC_ROOT)
+
+    # Starts a local test server.
+    bottle.run(server='wsgiref', host=HOST, port=PORT)
 
