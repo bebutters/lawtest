@@ -69,5 +69,5 @@ def AddCookie():
     print(cookie)
     DBController.AddCookie(cookie, state)
 
-bottle.run(app, host='localhost', port=8080)
+bottle.run(app)
 
